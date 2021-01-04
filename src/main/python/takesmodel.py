@@ -34,7 +34,7 @@ class TakesTreeModel(QtCore.QAbstractItemModel):
 
     def setRepo(self, repo:Repo):
         self.beginResetModel()
-        self.repo = Repo
+        self.repo = repo
         self.endResetModel()
 
     def getDeal(self, idx:QtCore.QModelIndex):

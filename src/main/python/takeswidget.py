@@ -12,6 +12,10 @@ class TakesWidget(QtWidgets.QGroupBox):
         super().__init__("Расчёт результата", parent)
 
         self.table = QtWidgets.QTreeView(self)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
+        self.table.verticalHeader().setDefaultSectionSize(QtGui.QFontMetrics(self.table.font()).height())
+        self.table.verticalHeader().hide()
         
         self.model = takesmodel.TakesTreeModel(self)
         self.table.setModel(self.model)

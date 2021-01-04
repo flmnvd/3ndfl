@@ -3,6 +3,7 @@ from PySide2.QtCore import QDate
 from decimal import Decimal
 import currencyrates
 import datatypes
+import storage
 
 def _getDealDateDiapason(deals):
     diapasons = {}
@@ -18,18 +19,16 @@ def _getDealDateDiapason(deals):
     return diapasons
 
 class Repo:
-    _infos = {} # Dict ticker/Financial instrument information
-    _currencyRates = {} # Dict of "currency - dict QDate/price_in_rub"
-    _deals = [] # List of all deals
-    _takes = [] # Dict ticker/take
-    _totalTaxRub = 0 # Whole Rub tax
+    def __init__(self):
+        self._infos = {}  # Dict ticker/Financial instrument information
+        self._currencyRates = storage.loadCurrencyRates()  # Dict of "currency - dict QDate/price_in_rub"
+        self._deals = []  # List of all deals
+        self._takes = []  # Dict ticker/take
+        self._calc = []
+        self._totalTaxRub = 0  # Whole Rub tax
 
     def clear(self):
-        self._infos = {}
-        self._currencyRates = {}
-        self._deals = []
-        self._calc = []
-        self._totalTaxRub = 0
+        self.__init__()
 
     """ibreports - list of csv report file paths"""
     def addIbReports(self, ibreports):
@@ -48,11 +47,12 @@ class Repo:
         self._updateTotal()
         self._updateTakes()
         self._updateTakeProceeds()
+        storage.storeCurrencyRates(self._currencyRates)
 
     def getRate(self, currency:str, date:QDate):
         rates = self._currencyRates[currency]
         d = date.date() if type(date) is QDateTime else date
-        if not d in rates:
+        if d not in rates:
             rate = currencyrates.getCbRate(currency, d)
             rates[d] = rate
             return rate
@@ -80,6 +80,13 @@ class Repo:
         diapasons = _getDealDateDiapason(self._deals)
         for currency in diapasons:
             dtfrom, dtto = diapasons[currency]
+            dtfrom = dtfrom.date()
+            dtto = dtto.date()
+            # Check existing rates.
+            if currency in self._currencyRates:
+                havefrom, haveto = min(self._currencyRates[currency]), max(self._currencyRates[currency])
+                if havefrom <= dtfrom and haveto >= dtto: continue
+            # Get rates.
             rates = currencyrates.getCbRates(currency, dtfrom, dtto)
             self._currencyRates[currency] = rates
         for deal in self._deals:
