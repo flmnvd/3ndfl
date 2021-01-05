@@ -18,7 +18,8 @@ BONDS = ["Bonds","Облигации"]
 FOREX = ["Forex"]
 
 #__corp_action_rexp = re.compile("Data,Stocks,[^,]*,[^,]*,[^,]*,[^,]*,\"([^(]*)[^ ]* CUSIP\/ISIN Change to \([^(]*\(([^,]*)")
-__corp_action_split_rexp = re.compile("([^(]*)\(([^)]*)\) ([^(]*) \(([^,]*), [^,]*, ([^)]*).*")
+#__corp_action_split_rexp = re.compile("([^(]*)\(([^)]*)\) ([^(]*) \(([^,]*), [^,]*, ([^)]*).*")
+__corp_action_split_rexp = re.compile("([^(]*)\(([^)]*)\) Split ([0-9]*) for ([0-9]*) \(([^,]*), [^,]*, ([^)]*).*")
 __corp_action_change_rexp = re.compile("([^(]*)\(([^)]*)\) ([^(]*) \(([^)]*)\) \(([^,]*), [^,]*, ([^)]*).*")
 
 def _splitCsvLine(s:str):
@@ -114,8 +115,9 @@ def _parseCorporateAction(l):
         m = __corp_action_split_rexp.search(deal.description)
         assert (m is not None)
         deal.dealType = datatypes.DealType.SPLIT
-        deal.origTicker = m.group(4).upper()
+        deal.origTicker = m.group(5).upper()
         deal.ticker = m.group(1).upper()
+        deal.split = Decimal(m.group(3)) / Decimal(m.group(4))
     elif "CUSIP/ISIN Change" in deal.description:
         m = __corp_action_change_rexp.search(deal.description)
         assert (m is not None)
@@ -198,12 +200,22 @@ def parseIbReportCsv(filename):
             assert(year == yearEnd)
     f.close()
     renameMap = _generateTickerRenameMap(tickerSetDict, openPositions, deals)  # Before corporate actions joining.
-    deals += corporateActions
+    # Merge Corporate Actions
+    corporateActionsMerged = []
+    prevCa = None
+    for ca in corporateActions:
+        if prevCa and ca.dateTime == prevCa.dateTime and ca.ticker == prevCa.ticker and ca.dealType == prevCa.dealType:
+            if ca.count>0:
+                prevCa.count += ca.count
+        else:
+            prevCa = ca
+            if prevCa.count<0:
+                prevCa.count = 0
+            corporateActionsMerged.append(ca)
+    deals += corporateActionsMerged
     return year, infos, deals, renameMap
 
 if __name__ == '__main__':
     year, infos, deals, renameMap = parseIbReportCsv('c:/Users/dokvo/3ndfl_reports/my/2020.csv')
-    for info in infos:
-        print(info,': ',infos[info])
 #    _splitCsvLine(", 2 ,\"3,3,3\", \"4,\" ,5")
 #    _splitCsvLine("0, 2 ,\"3\", \"4\" ,")

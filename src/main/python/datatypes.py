@@ -51,7 +51,7 @@ class InstrumentInfo:
         self.type = None
 
     def __str__(self):
-        return "Asset: {} Ticker: {} Name: {} Exchenge: {} Type: {}"\
+        return "Asset: {} Ticker: {} Name: {} Exchange: {} Type: {}"\
             .format(self.assetClass,self.ticker,self.name,self.exchange,self.type)
 
 class Deal:
