@@ -15,7 +15,7 @@ if __name__ == '__main__':
     window.resize(1024, 768)
     window.show()
 
-    window._openIb(["c:/Users/dokvo/3ndfl_reports/my-test/2020.csv","c:/Users/dokvo/3ndfl_reports/my-test/2019.csv"])
+    window._openIb(["c:/Users/dokvo/3ndfl_reports/my/2018.csv", "c:/Users/dokvo/3ndfl_reports/my/2019.csv", "c:/Users/dokvo/3ndfl_reports/my/2020.csv"])
 
     exit_code = appctxt.app.exec_()      # 2. Invoke appctxt.app.exec_()
     sys.exit(exit_code)

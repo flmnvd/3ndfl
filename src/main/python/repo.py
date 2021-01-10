@@ -69,7 +69,8 @@ class Repo:
         curr = SummaryTake()
         for take in self._takes:
             if take.left != 0: continue  # All open deals was not found.
-            if take.closeDeal.assetClass!=datatypes.AssetClass.STOCKS: continue
+            if take.closeDeal.assetClass != datatypes.AssetClass.STOCKS: continue
+            if take.closeDeal.dealType != datatypes.DealType.CLOSE_DEAL: continue
             info = self._infos[take.closeDeal.ticker]
             if info.exchange != "PINK": continue
             # Flush current
@@ -85,6 +86,7 @@ class Repo:
             # Calculate
             curr.gain += take.count()*take.closeDeal.price - take.closeDeal.fee
             for openDeal in take.openDeals:
+                if openDeal.deal.dealType != datatypes.DealType.OPEN_DEAL: continue
                 curr.gain -= openDeal.deal.fee
                 curr.sum += openDeal.count*openDeal.price
         txt += "Итого возврат с вложенного: {:.0f}%".format(-total.gain*100/total.sum)
