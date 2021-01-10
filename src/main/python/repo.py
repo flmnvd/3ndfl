@@ -58,6 +58,38 @@ class Repo:
             return rate
         return rates[d]
 
+    def otcReport(self):
+        txt = ""
+        class SummaryTake(object):
+            def __init__(self):
+                self.ticker = None
+                self.sum = Decimal(0)
+                self.gain = Decimal(0)
+        total = SummaryTake()
+        curr = SummaryTake()
+        for take in self._takes:
+            if take.left != 0: continue  # All open deals was not found.
+            if take.closeDeal.assetClass!=datatypes.AssetClass.STOCKS: continue
+            info = self._infos[take.closeDeal.ticker]
+            if info.exchange != "PINK": continue
+            # Flush current
+            if curr.ticker != take.closeDeal.ticker:
+                if curr.ticker:
+                    curr.gain += curr.sum  # Don't take into account return. Only profit.
+                    total.gain += curr.gain
+                    total.sum += curr.sum
+                    percent = curr.gain * 100 / curr.sum
+                    txt += "{} {:.0f}%\n".format(curr.ticker, -percent)
+                    curr.__init__()
+                curr.ticker = take.closeDeal.ticker
+            # Calculate
+            curr.gain += take.count()*take.closeDeal.price - take.closeDeal.fee
+            for openDeal in take.openDeals:
+                curr.gain -= openDeal.deal.fee
+                curr.sum += openDeal.count*openDeal.price
+        txt += "Итого возврат с вложенного: {:.0f}%".format(-total.gain*100/total.sum)
+        return txt
+
     def _renameTickers(self, renames):
         redict = {}  # United rename dict.
         for ren in sorted(renames.items()):
@@ -132,7 +164,7 @@ class Repo:
                         fifo.pop(0)
                     # Normal deal
                     else:
-                        # Calculate
+                        # Combine
                         if abs(openDeal.left) >= abs(take.left):  # full cover
                             openDeal.left += take.left  # they have different signs
                             openDeal.count = -take.left
@@ -201,3 +233,6 @@ if __name__ == '__main__':
     for take in repo._takes:
         print(take)
         print()
+
+    print("-----------------------------------------")
+    print(repo.otcReport())

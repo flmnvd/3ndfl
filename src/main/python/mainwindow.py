@@ -27,6 +27,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Toolbar Actions
         style = QtWidgets.QApplication.instance().style()
         tb.addAction(style.standardIcon(QtWidgets.QStyle.SP_DialogOpenButton),"Открыть отчёты IB",).triggered.connect(self._onOpenIb)
+        tb.addAction(style.standardIcon(QtWidgets.QStyle.SP_MessageBoxInformation),"Сформировать отчёт OTC",).triggered.connect(self._onOtcReport)
         tb.addAction(style.standardIcon(QtWidgets.QStyle.SP_MessageBoxQuestion),"Справка",).triggered.connect(self._onShowHelp)
 
         # Connects
@@ -38,6 +39,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if dlg.exec_():
             filenames = dlg.selectedFiles()
             self._openIb(filenames)
+
+    def _onOtcReport(self):
+        dlg = QtWidgets.QDialog()
+        textEdit = QtWidgets.QTextEdit(dlg)
+        textEdit.setText(self.repo.otcReport())
+        QtWidgets.QVBoxLayout(dlg).addWidget(textEdit)
+        dlg.resize(800, 600)
+        dlg.exec_()
 
     def _onShowHelp(self):
         QtGui.QDesktopServices.openUrl("https://github.com/flmnvd/3ndfl")
