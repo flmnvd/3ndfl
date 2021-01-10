@@ -57,20 +57,21 @@ class TakesTreeModel(QtCore.QAbstractItemModel):
                 take = self.repo._takes[index.parent().row()]
                 openDeal = take.openDeals[index.row()]
                 deal = openDeal.deal
-                if column==Columns.COUNT:       return decToS(deal.count-openDeal.left) + ('('+decToS(deal.count)+')' if openDeal.left!=0 else "")
+                if column==Columns.COUNT:   return decToS(openDeal.count) + ('(осталось: ' + decToS(openDeal.left) + ')' if openDeal.left != 0 else '')
+                if column == Columns.PRICE: return decToS(openDeal.price) + ('(до сплита: ' + decToS(deal.price) + ')' if deal.price != openDeal.price else '')
             # Parent
             else:
                 take = self.repo._takes[index.row()]
                 deal = take.closeDeal
-                if column==Columns.COUNT:       return decToS(deal.count)
+                if column==Columns.COUNT:       return decToS(take.count())
                 if column==Columns.TOTAL:       return decToS(deal.total)
                 if column==Columns.TOTAL_RUB:   return decToS(deal.totalRub)
                 if column==Columns.PROCEEDS:    return decToS(take.proceeds)
                 if column==Columns.PROCEEDS_RUB:return decToS(take.proceedsRub)
                 if column==Columns.TAX:         return decToS(take.tax)
+                if column == Columns.PRICE:     return decToS(deal.price)
             if column==Columns.TICKER:      return deal.ticker
             if column==Columns.DATETIME:    return deal.dateTime.toString("yyyy-MM-dd hh:mm:ss")
-            if column==Columns.PRICE:       return decToS(deal.price)
             if column==Columns.FEE:         return decToS(deal.fee)
             if column==Columns.RATE:        return decToS(deal.rate) #self.repo.getRate(deal.currency,deal.dateTime.date())
 
@@ -78,7 +79,7 @@ class TakesTreeModel(QtCore.QAbstractItemModel):
             take = self.repo._takes[index.row()]
             # Parent
             if not index.parent().isValid():
-                if take.count!=0:
+                if take.left!=0:
                     return QtGui.QColor(180,0,0)
 
     def headerData(self, section:int, orientation:QtCore.Qt.Orientation, role:int=...) -> typing.Any:

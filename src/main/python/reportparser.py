@@ -19,7 +19,7 @@ FOREX = ["Forex"]
 
 #__corp_action_rexp = re.compile("Data,Stocks,[^,]*,[^,]*,[^,]*,[^,]*,\"([^(]*)[^ ]* CUSIP\/ISIN Change to \([^(]*\(([^,]*)")
 #__corp_action_split_rexp = re.compile("([^(]*)\(([^)]*)\) ([^(]*) \(([^,]*), [^,]*, ([^)]*).*")
-__corp_action_split_rexp = re.compile("([^(]*)\(([^)]*)\) Split ([0-9]*) for ([0-9]*) \(([^,]*), [^,]*, ([^)]*).*")
+__corp_action_split_rexp = re.compile("([^(]*)\(([^)]*)\) (Split|Сплит) ([0-9]*) (for|за) ([0-9]*) \(([^,]*), [^,]*, ([^)]*).*")
 __corp_action_change_rexp = re.compile("([^(]*)\(([^)]*)\) ([^(]*) \(([^)]*)\) \(([^,]*), [^,]*, ([^)]*).*")
 
 def _splitCsvLine(s:str):
@@ -92,9 +92,12 @@ def _parseInfoDataLine(l):
     info.securityid = l[6]  # Security ID
     info.exchange = l[7]  # Listing Exch
     info.multiplier = l[8]  # Multiplier
-    assert(int(info.multiplier)==1)  # TODO: WTF multiplier is?
-    info.type = l[9]  # Type
-    code = l[10]
+    if info.assetClass == datatypes.AssetClass.FUTURES:
+        pass  # ['Информация о финансовом инструменте', 'Data', 'Фьючерсы', 'M6EM8', 'M6E 18JUN18', '299701758', '', '12,500', '2018-06-18', '2018-06', '']
+    else:
+        assert(int(info.multiplier)==1)  # TODO: WTF multiplier is?
+        info.type = l[9]  # Type
+        code = l[10]
     #assert (len(code) == 0)  # TODO: WTF code is? X on BOND X Corp US912909AN84
     return info
 
@@ -111,16 +114,12 @@ def _parseCorporateAction(l):
     assert(l[9] == '0')
     assert(l[10] == '0')
     assert(l[11] == '')
-    if "Split" in deal.description:
-        m = __corp_action_split_rexp.search(deal.description)
-        assert (m is not None)
+    if (m := __corp_action_split_rexp.search(deal.description)) is not None:
         deal.dealType = datatypes.DealType.SPLIT
-        deal.origTicker = m.group(5).upper()
+        deal.origTicker = m.group(7).upper()
         deal.ticker = m.group(1).upper()
-        deal.split = Decimal(m.group(3)) / Decimal(m.group(4))
-    elif "CUSIP/ISIN Change" in deal.description:
-        m = __corp_action_change_rexp.search(deal.description)
-        assert (m is not None)
+        deal.split = Decimal(m.group(6)) / Decimal(m.group(4))
+    elif (m := __corp_action_change_rexp.search(deal.description)) is not None:
         deal.dealType = datatypes.DealType.RENAME
         deal.origTicker = m.group(5).upper()
         deal.ticker = m.group(1).upper()

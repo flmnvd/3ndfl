@@ -46,7 +46,7 @@ class Repo:
         self._updateRates()
         self._updateTotal()
         self._updateTakes()
-        self._updateTakeProceeds()
+        #self._updateTakeProceeds()
         storage.storeCurrencyRates(self._currencyRates)
 
     def getRate(self, currency:str, date:QDate):
@@ -98,9 +98,9 @@ class Repo:
                 deal.total = deal.count * deal.price - deal.fee
                 deal.totalRub = deal.total * deal.rate
 
-    """FIFO"""
+    """FIFO
+    Don't subtract fees."""
     def _updateTakes(self):
-        return # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         currTicker = None
         fifo = []
         for deal in self._deals:
@@ -108,39 +108,57 @@ class Repo:
                 currTicker = deal.ticker
                 # TODO: PROCESS LEFTOVERS AND REMAINS !!!
                 fifo.clear()
-            if deal.isOpenDeal:
+            # Don't take RENAME yet
+            if (not deal.dealType & datatypes.DealType.CLOSE_DEAL) and (not deal.dealType & datatypes.DealType.RENAME):  #in (datatypes.DealType.OPEN_DEAL, datatypes.DealType.SPLIT):
                 fifo.append(datatypes.OpenDeal(deal))
-            else:
-                print("TAKE",deal)
+            if deal.dealType & datatypes.DealType.CLOSE_DEAL:
+                #print("TAKE",deal)
                 take = datatypes.Take(deal)
                 self._takes.append(take)
-                take.count = deal.count
                 for i in range(len(fifo)):
-                    openDeal = fifo[0]
-                    print("====", take.count, openDeal.left, "====", openDeal.deal)
+                    openDeal = fifo.pop(0)
+                    #print("====", take.left, openDeal.left, "====", openDeal.deal)
                     take.openDeals.append(openDeal)
                     # Checks
-                    assert openDeal.left!=0
-                    if openDeal.left > 0:   assert take.count < 0 # long
-                    else:                   assert take.count > 0 # short
-                    # Calculate
-                    if abs(openDeal.left) >= abs(take.count): # full cover
-                        openDeal.left += take.count
-                        take.count = 0
-                    else:
-                        take.count += openDeal.left
-                        openDeal.left = 0
-                    # If something stocks in open deal left - let deal stay in fifo for later takes. Else remove it.
-                    if openDeal.left == 0:
+                    assert openDeal.left != 0
+                    if openDeal.left > 0:   assert take.left < 0  # long
+                    else:                   assert take.left > 0  # short
+                    # Split
+                    if deal.dealType & datatypes.DealType.SPLIT:
+                        for k in range(i):
+                            fifo[k].count *= deal.split
+                            openDeal.left *= deal.split
+                            fifo[k].price /= deal.split
                         fifo.pop(0)
-                    # Enough open deals for this take.
-                    if take.count == 0:
-                        break
+                    # Normal deal
+                    else:
+                        # Calculate
+                        if abs(openDeal.left) >= abs(take.left):  # full cover
+                            openDeal.left += take.left  # they have different signs
+                            openDeal.count = -take.left
+                            take.left = 0
+                        else:
+                            take.left += openDeal.left
+                            openDeal.count = openDeal.left
+                            openDeal.left = 0
+                        # If something stocks in open deal left - let deal stay in fifo for later takes. Else remove it.
+                        if openDeal.left != 0:
+                            fifo.insert(0, openDeal.__copy__())
+                        # Enough open deals for this take.
+                        if take.left == 0:
+                            break
+                        # Open-close deal
+                        if not fifo and deal.dealType & (datatypes.DealType.OPEN_DEAL | datatypes.DealType.CLOSE_DEAL):
+                            openCloseDeal = datatypes.OpenDeal(deal)
+                            openCloseDeal.count = take.left
+                            openCloseDeal.left = take.left
+                            fifo.append(openCloseDeal)
+                            break
                 # Close count must be less than open
                 #print(take)
                 #assert take.count==0
                 # TODO: CHECK LEFTOVERS AND REMAINS !!!
-
+    """
     def _updateTakeProceeds(self):
         for take in self._takes:
             if take.count!=0:
@@ -166,10 +184,20 @@ class Repo:
             assert take.count==0
             take.tax = take.proceedsRub * Decimal(0.13)
             self._totalTaxRub += take.tax
+    """
 
 if __name__ == '__main__':
+    from PySide2 import QtWidgets
+    from fbs_runtime.application_context.PySide2 import ApplicationContext
+    appctxt = ApplicationContext()
+    app = QtWidgets.QApplication.instance()
+    app.setApplicationName("3ndfl")
+    app.setOrganizationName("finhack")
+    app.setOrganizationDomain("tech")
+
     repo = Repo()
-    repo.addIbReports(["c:/Users/dokvo/3ndfl_reports/my-test/2020.csv","c:/Users/dokvo/3ndfl_reports/my-test/2019.csv"])
+    repo.addIbReports(["c:/Users/dokvo/3ndfl_reports/my/2018.csv", "c:/Users/dokvo/3ndfl_reports/my/2019.csv", "c:/Users/dokvo/3ndfl_reports/my/2020.csv"])
+    print("-----------------------------------------")
     for take in repo._takes:
         print(take)
         print()

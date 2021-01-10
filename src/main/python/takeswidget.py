@@ -1,6 +1,5 @@
 # coding=utf-8
-from PySide2 import QtCore
-from PySide2 import QtWidgets
+from PySide2 import QtCore, QtGui, QtWidgets
 from repo import Repo
 import takesmodel
 import datatypes
@@ -11,14 +10,12 @@ class TakesWidget(QtWidgets.QGroupBox):
     def __init__(self, parent:QtWidgets.QWidget):
         super().__init__("Расчёт результата", parent)
 
-        self.table = QtWidgets.QTreeView(self)
-        self.table.setAlternatingRowColors(True)
-        self.table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
-        self.table.verticalHeader().setDefaultSectionSize(QtGui.QFontMetrics(self.table.font()).height())
-        self.table.verticalHeader().hide()
-        
+        self.treeView = QtWidgets.QTreeView(self)
+        #self.treeView.setAlternatingRowColors(True)
+        #self.treeView.verticalHeader().setDefaultSectionSize(QtGui.QFontMetrics(self.treeView.font()).height())
+
         self.model = takesmodel.TakesTreeModel(self)
-        self.table.setModel(self.model)
+        self.treeView.setModel(self.model)
 
         # Bottom
         lblTaxCaption = QtWidgets.QLabel("Всего налог: ")
@@ -27,7 +24,7 @@ class TakesWidget(QtWidgets.QGroupBox):
         # Layout
         lt = QtWidgets.QVBoxLayout(self)
         #lt.setMargin(0)
-        lt.addWidget(self.table)
+        lt.addWidget(self.treeView)
 
         ltBottom = QtWidgets.QHBoxLayout()
         ltBottom.addWidget(lblTaxCaption)
@@ -36,7 +33,7 @@ class TakesWidget(QtWidgets.QGroupBox):
         lt.addLayout(ltBottom)
 
         # Connects
-        self.table.clicked.connect(self._onItemClicked)
+        self.treeView.selectionModel().currentChanged.connect(self._onItemClicked)
 
     def setRepo(self, repo:Repo):
         self.model.setRepo(repo)

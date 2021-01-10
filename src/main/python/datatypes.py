@@ -73,18 +73,29 @@ class Deal:
         self.totalRub = None
 
     def __str__(self):
-        return "Asset: {} Currency: {} Ticker: {}({}) DT: {} Count: {} Price: {} Fee: {} Open: {} Rate: {}"\
+        return "Asset: {} Currency: {} Ticker: {}({}) DT: {} Count: {} Price: {} Fee: {} Type: {} Rate: {}"\
             .format(self.assetClass,self.currency,self.ticker,self.origTicker,self.dateTime.toString("yyyy-MM-dd hh:mm:ss"),self.count,self.price,self.fee,self.dealType,self.rate)
 
 class OpenDeal:
     def __init__(self, deal:Deal):
         self.deal = deal
+        self.price = deal.price
+        self.count = deal.count
         self.left = deal.count
-        # don't remember why it is here: self.count = None # If count != 0 - there is absent open deals (from previous periods?)
+
+    def __copy__(self):
+        d = OpenDeal(self.deal)
+        d.price = self.price
+        d.count = self.count
+        d.left = self.left
+        return d
+
+    def __str__(self):
+        return self.deal.__str__() + " | Count: {} Price: {} Left: {}".format(self.count, self.price, self.left)
 
 class Take:
     def __init__(self, closeDeal:Deal):
-        self.count = None
+        self.left = closeDeal.count
         self.openDeals = []
         self.closeDeal = closeDeal
 
@@ -92,10 +103,14 @@ class Take:
         self.proceedsRub = None
         self.tax = None
 
+    def count(self):
+        return self.closeDeal.count - self.left
+
     def __str__(self):
         s = self.closeDeal.__str__()
-        s += '\n' + "Count: {}".format(self.count)
-        for deal in self.openDeals:
+        s += " | Count: {} Left: {}".format(self.count(), self.left)
+        #s += '\n' + "Count: {}".format(self.left)
+        for openDeal in self.openDeals:
             s += "\n===="
-            s += deal.__str__()
+            s += openDeal.__str__()
         return s
