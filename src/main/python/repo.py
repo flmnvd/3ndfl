@@ -88,7 +88,7 @@ class Repo:
                             prcnt = (sell-buy) * 100 / buy
                             txt += "{:.4f} ({:.0f}%), ".format(sell, prcnt)
                         txt = txt[:-2] + ";"
-                    txt = txt[:-1] + "\n"
+                    txt = txt[:-1] + "<br>\n"
                     curr.__init__()
                 curr.ticker = take.closeDeal.ticker
             # Calculate
