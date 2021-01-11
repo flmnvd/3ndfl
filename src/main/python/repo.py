@@ -65,6 +65,7 @@ class Repo:
                 self.ticker = None
                 self.sum = Decimal(0)
                 self.gain = Decimal(0)
+                self.deals = {}
         total = SummaryTake()
         curr = SummaryTake()
         for take in self._takes:
@@ -80,7 +81,14 @@ class Repo:
                     total.gain += curr.gain
                     total.sum += curr.sum
                     percent = curr.gain * 100 / curr.sum
-                    txt += "{} {:.0f}%\n".format(curr.ticker, -percent)
+                    txt += "<b>{} {:.0f}%</b>".format(curr.ticker, -percent)
+                    for buy in curr.deals:
+                        txt += " куплено по {:.4f} продано: ".format(buy)
+                        for sell in curr.deals[buy]:
+                            prcnt = (sell-buy) * 100 / buy
+                            txt += "{:.4f} ({:.0f}%), ".format(sell, prcnt)
+                        txt = txt[:-2] + ";"
+                    txt = txt[:-1] + "\n"
                     curr.__init__()
                 curr.ticker = take.closeDeal.ticker
             # Calculate
@@ -89,6 +97,8 @@ class Repo:
                 if openDeal.deal.dealType != datatypes.DealType.OPEN_DEAL: continue
                 curr.gain -= openDeal.deal.fee
                 curr.sum += openDeal.count*openDeal.price
+                if openDeal.price not in curr.deals: curr.deals[openDeal.price] = set()
+                curr.deals[openDeal.price].add(take.closeDeal.price)
         txt += "Итого возврат с вложенного: {:.0f}%".format(-total.gain*100/total.sum)
         return txt
 
