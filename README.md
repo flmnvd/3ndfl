@@ -1,11 +1,17 @@
 Не уверен, что стоит доделывать.
 
 Смотрите в сторону: https://github.com/titov-vv/jal/blob/master/docs/ru-tax-3ndfl/taxes.md
+
 JAL умеет уже очень многое.
+
 Так же хороший скрипт: https://github.com/airens/interactive_brokers_tax
+
 Ещё решения на данную тему:
+
 https://github.com/KonishchevDmitry/investments
+
 https://github.com/cdump/investments
+
 https://github.com/igor58279/ibtaxes
 
 # Комплексная программа расчёта налога по доходам от операций с финансовыми инструментами и подготовки декларации 3-НДФЛ для налоговой службы (ФНС)
